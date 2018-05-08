@@ -114,25 +114,22 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     // Set up view controller properties
     self.transitioningDelegate = self;
     self.view.backgroundColor = self.cropView.backgroundColor;
-    
-    BOOL circularMode = (self.croppingStyle == TOCropViewCroppingStyleCircular);
 
     // Layout the views initially
     self.cropView.frame = [self frameForCropViewWithVerticalLayout:self.verticalLayout];
     self.toolbar.frame = [self frameForToolbarWithVerticalLayout:self.verticalLayout];
 
-    // Set up toolbar default behaviour
-    self.toolbar.clampButtonHidden = self.aspectRatioPickerButtonHidden || circularMode;
-    self.toolbar.rotateClockwiseButtonHidden = self.rotateClockwiseButtonHidden;
-    
     // Set up the toolbar button actions
     __weak typeof(self) weakSelf = self;
-    self.toolbar.doneButtonTapped   = ^{ [weakSelf doneButtonTapped]; };
-    self.toolbar.cancelButtonTapped = ^{ [weakSelf cancelButtonTapped]; };
-    self.toolbar.resetButtonTapped = ^{ [weakSelf resetCropViewLayout]; };
-    self.toolbar.clampButtonTapped = ^{ [weakSelf showAspectRatioDialog]; };
-    self.toolbar.rotateCounterclockwiseButtonTapped = ^{ [weakSelf rotateCropViewCounterclockwise]; };
-    self.toolbar.rotateClockwiseButtonTapped        = ^{ [weakSelf rotateCropViewClockwise]; };
+    self.toolbar.originalButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPresetOriginal animated:YES]; };
+    self.toolbar.squareButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPresetSquare animated:YES]; };
+    self.toolbar.horizontalButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPreset6x5 animated:YES]; };
+//    self.toolbar.doneButtonTapped   = ^{ [weakSelf doneButtonTapped]; };
+//    self.toolbar.cancelButtonTapped = ^{ [weakSelf cancelButtonTapped]; };
+//    self.toolbar.resetButtonTapped = ^{ [weakSelf resetCropViewLayout]; };
+//    self.toolbar.clampButtonTapped = ^{ [weakSelf showAspectRatioDialog]; };
+//    self.toolbar.rotateCounterclockwiseButtonTapped = ^{ [weakSelf rotateCropViewCounterclockwise]; };
+//    self.toolbar.rotateClockwiseButtonTapped        = ^{ [weakSelf rotateCropViewClockwise]; };
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -540,114 +537,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 }
 #pragma clang diagnostic pop
 
-#pragma mark - Reset -
-- (void)resetCropViewLayout
-{
-    BOOL animated = (self.cropView.angle == 0);
-    
-    if (self.resetAspectRatioEnabled) {
-        self.aspectRatioLockEnabled = NO;
-    }
-    
-    [self.cropView resetLayoutToDefaultAnimated:animated];
-}
-
-#pragma mark - Aspect Ratio Handling -
-- (void)showAspectRatioDialog
-{
-    if (self.cropView.aspectRatioLockEnabled) {
-        self.cropView.aspectRatioLockEnabled = NO;
-        self.toolbar.clampButtonGlowing = NO;
-        return;
-    }
-    
-    //Depending on the shape of the image, work out if horizontal, or vertical options are required
-    BOOL verticalCropBox = self.cropView.cropBoxAspectRatioIsPortrait;
-    
-    // In CocoaPods, strings are stored in a separate bundle from the main one
-    NSBundle *resourceBundle = nil;
-    NSBundle *classBundle = [NSBundle bundleForClass:[self class]];
-    NSURL *resourceBundleURL = [classBundle URLForResource:@"TOCropViewControllerBundle" withExtension:@"bundle"];
-    if (resourceBundleURL) {
-        resourceBundle = [[NSBundle alloc] initWithURL:resourceBundleURL];
-    }
-    else {
-        resourceBundle = classBundle;
-    }
-    
-    //Prepare the localized options
-    NSString *cancelButtonTitle = NSLocalizedStringFromTableInBundle(@"Cancel", @"TOCropViewControllerLocalizable", resourceBundle, nil);
-    NSString *originalButtonTitle = NSLocalizedStringFromTableInBundle(@"Original", @"TOCropViewControllerLocalizable", resourceBundle, nil);
-    NSString *squareButtonTitle = NSLocalizedStringFromTableInBundle(@"Square", @"TOCropViewControllerLocalizable", resourceBundle, nil);
-    
-    //Prepare the list that will be fed to the alert view/controller
-    NSMutableArray *items = [NSMutableArray array];
-    [items addObject:originalButtonTitle];
-    [items addObject:squareButtonTitle];
-    if (verticalCropBox) {
-        [items addObjectsFromArray:@[@"2:3", @"3:5", @"3:4", @"4:5", @"5:7", @"9:16"]];
-    }
-    else {
-        [items addObjectsFromArray:@[@"3:2", @"5:3", @"4:3", @"5:4", @"7:5", @"16:9"]];
-    }
-    
-    //Present via a UIAlertController if >= iOS 8
-    if (NSClassFromString(@"UIAlertController")) {
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-        [alertController addAction:[UIAlertAction actionWithTitle:cancelButtonTitle style:UIAlertActionStyleCancel handler:nil]];
-        
-        //Add each item to the alert controller
-        NSInteger i = 0;
-        for (NSString *item in items) {
-            UIAlertAction *action = [UIAlertAction actionWithTitle:item style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                [self setAspectRatioPreset:(TOCropViewControllerAspectRatioPreset)i animated:YES];
-                self.aspectRatioLockEnabled = YES;
-            }];
-            [alertController addAction:action];
-            
-            i++;
-        }
-        
-        alertController.modalPresentationStyle = UIModalPresentationPopover;
-        UIPopoverPresentationController *presentationController = [alertController popoverPresentationController];
-        presentationController.sourceView = self.toolbar;
-        presentationController.sourceRect = self.toolbar.clampButtonFrame;
-        [self presentViewController:alertController animated:YES completion:nil];
-    }
-    else {
-        
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_8_0
-    //TODO: Completely overhaul this once iOS 7 support is dropped
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:nil
-                                                                 delegate:self
-                                                        cancelButtonTitle:cancelButtonTitle
-                                                   destructiveButtonTitle:nil
-                                                        otherButtonTitles:nil];
-        
-        for (NSString *item in items) {
-            [actionSheet addButtonWithTitle:item];
-        }
-        
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
-            [actionSheet showFromRect:self.toolbar.clampButtonFrame inView:self.toolbar animated:YES];
-        else
-            [actionSheet showInView:self.view];
-#pragma clang diagnostic pop
-#endif
-    }
-}
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex
-{
-    [self setAspectRatioPreset:(TOCropViewControllerAspectRatioPreset)buttonIndex animated:YES];
-    self.aspectRatioLockEnabled = YES;
-}
-#pragma clang diagnostic pop
-
 - (void)setAspectRatioPreset:(TOCropViewControllerAspectRatioPreset)aspectRatioPreset animated:(BOOL)animated
 {
     CGSize aspectRatio = CGSizeZero;
@@ -661,23 +550,8 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         case TOCropViewControllerAspectRatioPresetSquare:
             aspectRatio = CGSizeMake(1.0f, 1.0f);
             break;
-        case TOCropViewControllerAspectRatioPreset3x2:
-            aspectRatio = CGSizeMake(3.0f, 2.0f);
-            break;
-        case TOCropViewControllerAspectRatioPreset5x3:
-            aspectRatio = CGSizeMake(5.0f, 3.0f);
-            break;
-        case TOCropViewControllerAspectRatioPreset4x3:
-            aspectRatio = CGSizeMake(4.0f, 3.0f);
-            break;
-        case TOCropViewControllerAspectRatioPreset5x4:
-            aspectRatio = CGSizeMake(5.0f, 4.0f);
-            break;
-        case TOCropViewControllerAspectRatioPreset7x5:
-            aspectRatio = CGSizeMake(7.0f, 5.0f);
-            break;
-        case TOCropViewControllerAspectRatioPreset16x9:
-            aspectRatio = CGSizeMake(16.0f, 9.0f);
+        case TOCropViewControllerAspectRatioPreset6x5:
+            aspectRatio = CGSizeMake(6.0f, 5.0f);
             break;
         case TOCropViewControllerAspectRatioPresetCustom:
             aspectRatio = self.customAspectRatio;
@@ -710,17 +584,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (void)rotateCropViewCounterclockwise
 {
     [self.cropView rotateImageNinetyDegreesAnimated:YES clockwise:NO];
-}
-
-#pragma mark - Crop View Delegates -
-- (void)cropViewDidBecomeResettable:(TOCropView *)cropView
-{
-    self.toolbar.resetButtonEnabled = YES;
-}
-
-- (void)cropViewDidBecomeNonResettable:(TOCropView *)cropView
-{
-    self.toolbar.resetButtonEnabled = NO;
 }
 
 #pragma mark - Presentation Handling -
@@ -911,7 +774,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         if (NSClassFromString(@"UIPopoverPresentationController")) {
             activityController.modalPresentationStyle = UIModalPresentationPopover;
             activityController.popoverPresentationController.sourceView = self.toolbar;
-            activityController.popoverPresentationController.sourceRect = self.toolbar.doneButtonFrame;
+            activityController.popoverPresentationController.sourceRect = self.toolbar.frame;
             [self presentViewController:activityController animated:YES completion:nil];
         }
         else {
@@ -923,7 +786,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
                 [self.activityPopoverController dismissPopoverAnimated:NO];
                 self.activityPopoverController = [[UIPopoverController alloc] initWithContentViewController:activityController];
-                [self.activityPopoverController presentPopoverFromRect:self.toolbar.doneButtonFrame inView:self.toolbar permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
+                [self.activityPopoverController presentPopoverFromRect:self.toolbar.frame inView:self.toolbar permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
 #pragma clang diagnostic pop
             }
         }
@@ -1062,14 +925,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.titleLabel.frame = [self frameForTitleLabelWithSize:self.titleLabel.frame.size verticalLayout:self.verticalLayout];
 }
 
-- (void)setDoneButtonTitle:(NSString *)title {
-    self.toolbar.doneTextButtonTitle = title;
-}
-
-- (void)setCancelButtonTitle:(NSString *)title {
-    self.toolbar.cancelTextButtonTitle = title;
-}
-
 - (TOCropView *)cropView {
     // Lazily create the crop view in case we try and access it before presentation, but
     // don't add it until our parent view controller view has loaded at the right time
@@ -1112,7 +967,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
 - (void)setAspectRatioLockEnabled:(BOOL)aspectRatioLockEnabled
 {
-    self.toolbar.clampButtonGlowing = aspectRatioLockEnabled;
     self.cropView.aspectRatioLockEnabled = aspectRatioLockEnabled;
     if (!self.aspectRatioPickerButtonHidden) {
         self.aspectRatioPickerButtonHidden = (aspectRatioLockEnabled && self.resetAspectRatioEnabled == NO);
@@ -1127,36 +981,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (BOOL)aspectRatioLockEnabled
 {
     return self.cropView.aspectRatioLockEnabled;
-}
-
-- (void)setRotateButtonsHidden:(BOOL)rotateButtonsHidden
-{
-    self.toolbar.rotateCounterclockwiseButtonHidden = rotateButtonsHidden;
-    self.toolbar.rotateClockwiseButtonHidden = rotateButtonsHidden;
-}
-
-- (BOOL)rotateButtonsHidden
-{
-    return self.toolbar.rotateCounterclockwiseButtonHidden && self.toolbar.rotateClockwiseButtonHidden;
-}
-
-- (void)setRotateClockwiseButtonHidden:(BOOL)rotateClockwiseButtonHidden
-{
-    self.toolbar.rotateClockwiseButtonHidden = rotateClockwiseButtonHidden;
-}
-
-- (BOOL)rotateClockwiseButtonHidden {
-    return self.toolbar.rotateClockwiseButtonHidden;
-}
-
-- (void)setAspectRatioPickerButtonHidden:(BOOL)aspectRatioPickerButtonHidden
-{
-    self.toolbar.clampButtonHidden = aspectRatioPickerButtonHidden;
-}
-
-- (BOOL)aspectRatioPickerButtonHidden
-{
-    return self.toolbar.clampButtonHidden;
 }
 
 - (void)setResetAspectRatioEnabled:(BOOL)resetAspectRatioEnabled
