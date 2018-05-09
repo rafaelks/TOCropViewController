@@ -36,6 +36,10 @@
     // Uncomment this if you wish to provide extra instructions via a title label
     cropController.title = @"Crop image";
 
+    [cropController setOnDidCropToRect:^(UIImage * _Nonnull image, CGRect cropRect, NSInteger angle) {
+        
+    }];
+
     // -- Uncomment these if you want to test out restoring to a previous crop setting --
     //cropController.angle = 90; // The initial angle in which the image will be rotated
     //cropController.imageCropFrame = CGRectMake(0,0,2848,4288); //The initial frame that the crop controller will have visible.
