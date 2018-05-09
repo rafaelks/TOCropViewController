@@ -41,7 +41,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 @property (nonatomic, strong) TOCropToolbar *toolbar;
 @property (nonatomic, strong, readwrite) TOCropView *cropView;
 @property (nonatomic, strong) UIView *toolbarSnapshotView;
-@property (nonatomic, strong, readwrite) UILabel *titleLabel;
 
 /* Transition animation controller */
 @property (nonatomic, copy) void (^prepareForTransitionHandler)(void);
@@ -87,8 +86,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         _croppingStyle = style;
         
         // Set up base view controller behaviour
-        self.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-        self.modalPresentationStyle = UIModalPresentationFullScreen;
         self.automaticallyAdjustsScrollViewInsets = NO;
         
         // Controller object that handles the transition animation when presenting / dismissing this app
@@ -124,43 +121,31 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.toolbar.originalButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPresetOriginal animated:YES]; };
     self.toolbar.squareButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPresetSquare animated:YES]; };
     self.toolbar.horizontalButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPreset6x5 animated:YES]; };
-//    self.toolbar.doneButtonTapped   = ^{ [weakSelf doneButtonTapped]; };
-//    self.toolbar.cancelButtonTapped = ^{ [weakSelf cancelButtonTapped]; };
-//    self.toolbar.resetButtonTapped = ^{ [weakSelf resetCropViewLayout]; };
-//    self.toolbar.clampButtonTapped = ^{ [weakSelf showAspectRatioDialog]; };
-//    self.toolbar.rotateCounterclockwiseButtonTapped = ^{ [weakSelf rotateCropViewCounterclockwise]; };
-//    self.toolbar.rotateClockwiseButtonTapped        = ^{ [weakSelf rotateCropViewClockwise]; };
 }
 
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-    
-    // If we're animating onto the screen, set a flag
-    // so we can manually control the status bar fade out timing
-    if (animated) {
-        self.inTransition = YES;
-        [self setNeedsStatusBarAppearanceUpdate];
-    }
-    
-    // If this controller is pushed onto a navigation stack, set flags noting the
-    // state of the navigation controller bars before we present, and then hide them
-    if (self.navigationController) {
-        self.navigationBarHidden = self.navigationController.navigationBarHidden;
-        self.toolbarHidden = self.navigationController.toolbarHidden;
-        
-        [self.navigationController setNavigationBarHidden:YES animated:animated];
-        [self.navigationController setToolbarHidden:YES animated:animated];
-        
-        self.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
-    }
-    else {
-        // Hide the background content when transitioning for performance
-        [self.cropView setBackgroundImageViewHidden:YES animated:NO];
-        
-        // The title label will fade
-        self.titleLabel.alpha = animated ? 0.0f : 1.0f;
-    }
+    [self setNeedsStatusBarAppearanceUpdate];
+
+    // Transparent navigation bar
+    [self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
+    [self.navigationController.navigationBar setShadowImage:[UIImage new]];
+    [self.navigationController.navigationBar setTranslucent:YES];
+    [self.navigationController.navigationBar setTintColor:[UIColor whiteColor]];
+    [self.navigationController.navigationBar setTitleTextAttributes:@{
+        NSForegroundColorAttributeName: [UIColor whiteColor]
+    }];
+
+    // Navigation Buttons
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemStop
+                                                                                          target:self
+                                                                                          action:@selector(buttonCloseDidPressed)];
+
+    UIColor *pinkColor = [UIColor colorWithRed:255. / 255. green:68. / 255. blue:119. / 255. alpha:1];
+    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:nil];
+    [buttonNext setTintColor:pinkColor];
+    self.navigationItem.rightBarButtonItem = buttonNext;
 
     // If an initial aspect ratio was set before presentation, set it now once the rest of
     // the setup will have been done
@@ -183,7 +168,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     // the status bar fading out, and if present, the title label fading in
     void (^updateContentBlock)(void) = ^{
         [self setNeedsStatusBarAppearanceUpdate];
-        self.titleLabel.alpha = 1.0f;
     };
 
     if (animated) {
@@ -210,13 +194,9 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     
     // Set the transition flag again so we can defer the status bar
     self.inTransition = YES;
-    [UIView animateWithDuration:0.5f animations:^{ [self setNeedsStatusBarAppearanceUpdate]; }];
-    
-    // Restore the navigation controller to its state before we were presented
-    if (self.navigationController) {
-        [self.navigationController setNavigationBarHidden:self.navigationBarHidden animated:animated];
-        [self.navigationController setToolbarHidden:self.toolbarHidden animated:animated];
-    }
+    [UIView animateWithDuration:0.5f animations:^{
+        [self setNeedsStatusBarAppearanceUpdate];
+    }];
 }
 
 - (void)viewDidDisappear:(BOOL)animated
@@ -231,13 +211,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 #pragma mark - Status Bar -
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-    if (self.navigationController) {
-        return UIStatusBarStyleLightContent;
-    }
-
-    // Even though we are a dark theme, leave the status bar
-    // as black so it's not obvious that it's still visible during the transition
-    return UIStatusBarStyleDefault;
+    return UIStatusBarStyleLightContent;
 }
 
 - (BOOL)prefersStatusBarHidden
@@ -326,62 +300,10 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     return frame;
 }
 
-- (CGRect)frameForTitleLabelWithSize:(CGSize)size verticalLayout:(BOOL)verticalLayout
-{
-    CGRect frame = (CGRect){CGPointZero, size};
-    CGFloat viewWidth = self.view.bounds.size.width;
-    CGFloat x = 0.0f; // Additional X offset in landscape mode
-
-    // Adjust for landscape layout
-    if (!verticalLayout) {
-        x = kTOCropViewControllerTitleTopPadding;
-        if (@available(iOS 11.0, *)) {
-            x += self.view.safeAreaInsets.left;
-        }
-
-        viewWidth -= x;
-    }
-
-    // Work out horizontal position
-    frame.origin.x = ceilf((viewWidth - frame.size.width) * 0.5f);
-    if (!verticalLayout) { frame.origin.x += x; }
-
-    // Work out vertical position
-    if (@available(iOS 11.0, *)) {
-        frame.origin.y = self.view.safeAreaInsets.top + kTOCropViewControllerTitleTopPadding;
-    }
-    else {
-        frame.origin.y = self.statusBarHeight + kTOCropViewControllerTitleTopPadding;
-    }
-
-    return frame;
-}
-
 - (void)adjustCropViewInsets
 {
     UIEdgeInsets insets = self.statusBarSafeInsets;
-
-    if (!self.titleLabel.text.length) {
-        if (self.verticalLayout) {
-            self.cropView.cropRegionInsets = UIEdgeInsetsMake(insets.top, 0.0f, 0.0, 0.0f);
-        }
-        else {
-            self.cropView.cropRegionInsets = UIEdgeInsetsMake(0.0f, 0.0f, insets.bottom, 0.0f);
-        }
-
-        return;
-    }
-
-    // Work out the size of the title label based on the crop view size
-    CGRect frame = self.titleLabel.frame;
-    frame.size = [self.titleLabel sizeThatFits:self.cropView.frame.size];
-    self.titleLabel.frame = frame;
-
-    // Set out the appropriate inset for that
-    CGFloat verticalInset = self.statusBarHeight;
-    verticalInset += kTOCropViewControllerTitleTopPadding;
-    verticalInset += self.titleLabel.frame.size.height;
-    self.cropView.cropRegionInsets = UIEdgeInsetsMake(verticalInset, 0, insets.bottom, 0);
+    self.cropView.cropRegionInsets = UIEdgeInsetsMake(0.0f, 0.0f, insets.bottom, 0.0f);
 }
 
 - (void)adjustToolbarInsets
@@ -433,11 +355,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     if (self.firstTime == NO) {
         [self.cropView performInitialSetup];
         self.firstTime = YES;
-    }
-    
-    if (self.title.length) {
-        self.titleLabel.frame = [self frameForTitleLabelWithSize:self.titleLabel.frame.size verticalLayout:self.verticalLayout];
-        [self.cropView moveCroppedContentToCenterAnimated:NO];
     }
 
     [UIView performWithoutAnimation:^{
@@ -725,6 +642,12 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 }
 
 #pragma mark - Button Feedback -
+
+- (void)buttonCloseDidPressed
+{
+    [self dismissViewControllerAnimated:YES completion:NULL];
+}
+
 - (void)cancelButtonTapped
 {
     bool isDelegateOrCallbackHandled = NO;
@@ -907,25 +830,8 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     }
 }
 
-#pragma mark - Property Methods -
-
-- (void)setTitle:(NSString *)title
+- (TOCropView *)cropView
 {
-    [super setTitle:title];
-
-    if (self.title.length == 0) {
-        [_titleLabel removeFromSuperview];
-        _cropView.cropRegionInsets = UIEdgeInsetsMake(0, 0, 0, 0);
-        _titleLabel = nil;
-        return;
-    }
-
-    self.titleLabel.text = self.title;
-    [self.titleLabel sizeToFit];
-    self.titleLabel.frame = [self frameForTitleLabelWithSize:self.titleLabel.frame.size verticalLayout:self.verticalLayout];
-}
-
-- (TOCropView *)cropView {
     // Lazily create the crop view in case we try and access it before presentation, but
     // don't add it until our parent view controller view has loaded at the right time
     if (!_cropView) {
@@ -943,26 +849,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         [self.view addSubview:_toolbar];
     }
     return _toolbar;
-}
-
-- (UILabel *)titleLabel
-{
-    if (!self.title.length) { return nil; }
-    if (_titleLabel) { return _titleLabel; }
-
-    _titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-    _titleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline];
-    _titleLabel.backgroundColor = [UIColor clearColor];
-    _titleLabel.textColor = [UIColor whiteColor];
-    _titleLabel.numberOfLines = 1;
-    _titleLabel.baselineAdjustment = UIBaselineAdjustmentAlignBaselines;
-    _titleLabel.clipsToBounds = YES;
-    _titleLabel.textAlignment = NSTextAlignmentCenter;
-    _titleLabel.text = self.title;
-
-    [self.view insertSubview:self.titleLabel aboveSubview:self.cropView];
-
-    return _titleLabel;
 }
 
 - (void)setAspectRatioLockEnabled:(BOOL)aspectRatioLockEnabled

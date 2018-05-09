@@ -34,7 +34,7 @@
     cropController.delegate = self;
 
     // Uncomment this if you wish to provide extra instructions via a title label
-    //cropController.title = @"Crop Image";
+    cropController.title = @"Crop image";
 
     // -- Uncomment these if you want to test out restoring to a previous crop setting --
     //cropController.angle = 90; // The initial angle in which the image will be rotated
@@ -56,14 +56,15 @@
     //cropController.cancelButtonTitle = @"Title";
     
     self.image = image;
-    
+
     //If profile picture, push onto the same navigation stack
     if (self.croppingStyle == TOCropViewCroppingStyleCircular) {
         [picker pushViewController:cropController animated:YES];
     }
     else { //otherwise dismiss, and then present from the main controller
         [picker dismissViewControllerAnimated:YES completion:^{
-            [self presentViewController:cropController animated:YES completion:nil];
+            UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:cropController];
+            [self presentViewController:nav animated:YES completion:nil];
             //[self.navigationController pushViewController:cropController animated:YES];
         }];
     }
