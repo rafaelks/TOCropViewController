@@ -915,19 +915,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
 - (BOOL)overrideStatusBar
 {
-    // If we're pushed from a navigation controller, we'll defer
-    // to its handling of the status bar
-    if (self.navigationController) {
-        return NO;
-    }
-    
-    // If the view controller presenting us already hid it, we don't need to
-    // do anything ourselves
-    if (self.presentingViewController.prefersStatusBarHidden) {
-        return NO;
-    }
-    
-    // We'll handle the status bar
     return YES;
 }
 
