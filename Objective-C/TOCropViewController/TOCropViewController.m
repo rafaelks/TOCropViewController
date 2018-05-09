@@ -143,7 +143,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
                                                                                           action:@selector(buttonCloseDidPressed)];
 
     UIColor *pinkColor = [UIColor colorWithRed:255. / 255. green:68. / 255. blue:119. / 255. alpha:1];
-    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:nil];
+    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonTapped)];
     [buttonNext setTintColor:pinkColor];
     self.navigationItem.rightBarButtonItem = buttonNext;
 

@@ -36,6 +36,7 @@
 @property (nonnull, nonatomic, strong, readonly) UIButton *horizontalButton;
 
 /* Button feedback handler blocks */
+@property (nullable, nonatomic, copy) void (^doneButtonTapped)(void);
 @property (nullable, nonatomic, copy) void (^originalButtonTapped)(void);
 @property (nullable, nonatomic, copy) void (^squareButtonTapped)(void);
 @property (nullable, nonatomic, copy) void (^horizontalButtonTapped)(void);
