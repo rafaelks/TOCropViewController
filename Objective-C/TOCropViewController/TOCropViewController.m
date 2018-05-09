@@ -919,19 +919,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
 - (BOOL)statusBarHidden
 {
-    // Defer behavioir to the hosting navigation controller
-    if (self.navigationController) {
-        return self.navigationController.prefersStatusBarHidden;
-    }
-    
-    //If our presenting controller has already hidden the status bar,
-    //hide the status bar by default
-    if (self.presentingViewController.prefersStatusBarHidden) {
-        return YES;
-    }
-    
-    // Our default behaviour is to always hide the status bar
-    return YES;
+    return NO;
 }
 
 - (CGFloat)statusBarHeight
