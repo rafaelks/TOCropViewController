@@ -120,6 +120,10 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.toolbar.originalButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPresetOriginal animated:YES]; };
     self.toolbar.squareButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPresetSquare animated:YES]; };
     self.toolbar.horizontalButtonTapped = ^{ [weakSelf setAspectRatioPreset:TOCropViewControllerAspectRatioPreset6x5 animated:YES]; };
+
+    if (self.aspectRatioLockEnabled) {
+        [self.toolbar removeFromSuperview];
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated
