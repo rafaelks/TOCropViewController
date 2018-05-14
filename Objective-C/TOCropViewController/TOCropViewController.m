@@ -142,7 +142,9 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
                                                                                           action:@selector(buttonCloseDidPressed)];
 
     UIColor *pinkColor = [UIColor colorWithRed:255. / 255. green:68. / 255. blue:119. / 255. alpha:1];
-    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonTapped)];
+
+    NSString *buttonTitle = self.aspectRatioLockEnabled ? @"Done" : "Next";
+    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:buttonTitle style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonTapped)];
     [buttonNext setTintColor:pinkColor];
     self.navigationItem.rightBarButtonItem = buttonNext;
 
@@ -208,6 +210,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 }
 
 #pragma mark - Status Bar -
+
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
     return UIStatusBarStyleLightContent;
@@ -910,11 +913,6 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (BOOL)verticalLayout
 {
     return CGRectGetWidth(self.view.bounds) < CGRectGetHeight(self.view.bounds);
-}
-
-- (BOOL)overrideStatusBar
-{
-    return YES;
 }
 
 - (BOOL)statusBarHidden
