@@ -62,7 +62,7 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
     _bottomLeftLineViews = @[newLineView(), newLineView()];
     _topRightLineViews  = @[newLineView(), newLineView()];
     _bottomRightLineViews = @[newLineView(), newLineView()];
-    
+
     self.displayHorizontalGridLines = YES;
     self.displayVerticalGridLines = YES;
 }
@@ -98,7 +98,7 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
             case 2: frame = (CGRect){-1.0f,boundsSize.height,boundsSize.width+2.0f,1.0f}; break; //bottom
             case 3: frame = (CGRect){-1.0f,0,1.0f,boundsSize.height+1.0f}; break; //left
         }
-        
+
         lineView.frame = frame;
     }
     
@@ -126,9 +126,14 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
                 horizontalFrame = (CGRect){-3.0f,boundsSize.height,kTOCropOverLayerCornerWidth+3.0f,3.0f};
                 break;
         }
-        
-        [cornerLine[0] setFrame:verticalFrame];
-        [cornerLine[1] setFrame:horizontalFrame];
+
+        if (self.gridHidden) {
+            [cornerLine[0] setFrame:CGRectZero];
+            [cornerLine[1] setFrame:CGRectZero];
+        } else {
+            [cornerLine[0] setFrame:verticalFrame];
+            [cornerLine[1] setFrame:horizontalFrame];
+        }
     }
     
     //grid lines - horizontal

@@ -25,6 +25,7 @@
 #import "TOActivityCroppedImageProvider.h"
 #import "UIImage+CropRotate.h"
 #import "TOCroppedImageAttributes.h"
+#import "TOCropOverlayView.h"
 
 static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
@@ -138,6 +139,8 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
     if (self.aspectRatioLockEnabled) {
         [self.toolbar removeFromSuperview];
+        [self.cropView setCropBoxResizeEnabled:NO];
+        [self.cropView setGridOverlayHidden:YES];
     }
 
     // Navigation Buttons
@@ -831,8 +834,14 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         _cropView = [[TOCropView alloc] initWithCroppingStyle:self.croppingStyle image:self.image];
         _cropView.delegate = self;
         _cropView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+
+        if (self.aspectRatioLockEnabled) {
+            _cropView.gridOverlayView.gridHidden = YES;
+        }
+
         [self.view addSubview:_cropView];
     }
+
     return _cropView;
 }
 

@@ -132,18 +132,15 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 - (void)setup
 {
     __weak typeof(self) weakSelf = self;
-    
-    BOOL circularMode = (self.croppingStyle == TOCropViewCroppingStyleCircular);
-    
+
     //View properties
     self.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
     self.backgroundColor = TOCROPVIEW_BACKGROUND_COLOR;
     self.cropBoxFrame = CGRectZero;
     self.applyInitialCroppedImageFrame = NO;
     self.editing = NO;
-    self.cropBoxResizeEnabled = !circularMode;
-    self.aspectRatio = circularMode ? (CGSize){1.0f, 1.0f} : CGSizeZero;
-    self.resetAspectRatioEnabled = !circularMode;
+    self.aspectRatio = CGSizeZero;
+    self.resetAspectRatioEnabled = NO;
     self.restoreImageCropFrame = CGRectZero;
     self.restoreAngle = 0;
     self.cropAdjustingDelay = kTOCropTimerDuration;
@@ -214,16 +211,6 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     self.foregroundImageView = [[UIImageView alloc] initWithImage:self.image];
     self.foregroundImageView.layer.minificationFilter = kCAFilterTrilinear;
     [self.foregroundContainerView addSubview:self.foregroundImageView];
-    
-    // The following setup isn't needed during circular cropping
-    if (circularMode) {
-        UIBezierPath *circlePath = [UIBezierPath bezierPathWithOvalInRect:(CGRect){0,0,kTOCropViewCircularPathRadius, kTOCropViewCircularPathRadius}];
-        self.circularMaskLayer = [[CAShapeLayer alloc] init];
-        self.circularMaskLayer.path = circlePath.CGPath;
-        self.foregroundContainerView.layer.mask = self.circularMaskLayer;
-        
-        return;
-    }
     
     // The white grid overlay view
     self.gridOverlayView = [[TOCropOverlayView alloc] initWithFrame:self.foregroundContainerView.frame];
