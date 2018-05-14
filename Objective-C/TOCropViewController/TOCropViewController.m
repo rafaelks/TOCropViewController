@@ -838,14 +838,14 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
 - (TOCropToolbar *)toolbar
 {
-    if (self.aspectRatioLockEnabled) {
-        return nil;
-    }
-
     if (!_toolbar) {
         _toolbar = [[TOCropToolbar alloc] initWithFrame:CGRectZero];
-        [self.view addSubview:_toolbar];
+
+        if (!self.aspectRatioLockEnabled) {
+            [self.view addSubview:_toolbar];
+        }
     }
+
     return _toolbar;
 }
 
