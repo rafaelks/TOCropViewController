@@ -214,7 +214,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     // The white grid overlay view
     self.gridOverlayView = [[TOCropOverlayView alloc] initWithFrame:self.foregroundContainerView.frame];
-    self.gridOverlayView.userInteractionEnabled = YES;
+    self.gridOverlayView.userInteractionEnabled = NO;
     self.gridOverlayView.gridHidden = NO;
     [self addSubview:self.gridOverlayView];
     

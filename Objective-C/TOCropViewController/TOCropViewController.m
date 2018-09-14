@@ -141,6 +141,8 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         [self.toolbar removeFromSuperview];
         [self.cropView setCropBoxResizeEnabled:NO];
         [self.cropView setGridOverlayHidden:YES];
+    } else {
+        [self.cropView setCropBoxResizeEnabled:YES];
     }
 
     // Navigation Buttons
@@ -314,7 +316,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (void)adjustCropViewInsets
 {
     UIEdgeInsets insets = self.statusBarSafeInsets;
-    self.cropView.cropRegionInsets = UIEdgeInsetsMake(0.0f, 0.0f, insets.bottom, 0.0f);
+    self.cropView.cropRegionInsets = UIEdgeInsetsMake(60.f, 0.0f, insets.bottom, 0.0f);
 }
 
 - (void)adjustToolbarInsets
