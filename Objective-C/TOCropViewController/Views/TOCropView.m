@@ -214,8 +214,8 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     // The white grid overlay view
     self.gridOverlayView = [[TOCropOverlayView alloc] initWithFrame:self.foregroundContainerView.frame];
-    self.gridOverlayView.userInteractionEnabled = NO;
-    self.gridOverlayView.gridHidden = YES;
+    self.gridOverlayView.userInteractionEnabled = YES;
+    self.gridOverlayView.gridHidden = NO;
     [self addSubview:self.gridOverlayView];
     
     // The pan controller to recognize gestures meant to resize the grid view
@@ -801,9 +801,6 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 {
     if (recognizer.state == UIGestureRecognizerStateBegan)
         [self.gridOverlayView setGridHidden:NO animated:YES];
-    
-    if (recognizer.state == UIGestureRecognizerStateEnded)
-        [self.gridOverlayView setGridHidden:YES animated:YES];
 }
 
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
@@ -948,7 +945,8 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 
 #pragma mark - Accessors -
 
-- (void)setCropBoxResizeEnabled:(BOOL)panResizeEnabled {
+- (void)setCropBoxResizeEnabled:(BOOL)panResizeEnabled
+{
     _cropBoxResizeEnabled = panResizeEnabled;
     self.gridPanGestureRecognizer.enabled = _cropBoxResizeEnabled;
 }
@@ -1219,7 +1217,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     _editing = editing;
     
-    [self.gridOverlayView setGridHidden:!editing animated:animated];
+    [self.gridOverlayView setGridHidden:NO animated:animated];
     
     if (editing == NO) {
         [self moveCroppedContentToCenterAnimated:animated];
@@ -1603,7 +1601,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
             
             self.backgroundContainerView.alpha = 0.0f;
             self.gridOverlayView.alpha = 0.0f;
-            
+
             self.translucencyView.alpha = 1.0f;
             
             [UIView animateWithDuration:0.45f animations:^{
