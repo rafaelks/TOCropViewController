@@ -149,15 +149,15 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
     // Navigation Buttons
     if (self.navigationController.viewControllers.count == 1) {
-        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemStop
-                                                                                              target:self
-                                                                                              action:@selector(buttonCloseDidPressed)];
+        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Cancel", "")
+                                                                                 style:UIBarButtonItemStylePlain
+                                                                                target:self
+                                                                                action:@selector(cancelButtonTapped)];
     }
 
     UIColor *pinkColor = [UIColor colorWithRed:255. / 255. green:68. / 255. blue:119. / 255. alpha:1];
 
-    NSString *buttonTitle = self.aspectRatioLockEnabled ? @"Done" : @"Next";
-    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:buttonTitle style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonTapped)];
+    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Done", "") style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonTapped)];
     [buttonNext setTintColor:pinkColor];
     self.navigationItem.rightBarButtonItem = buttonNext;
 
