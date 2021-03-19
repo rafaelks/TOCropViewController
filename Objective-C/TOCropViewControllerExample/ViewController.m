@@ -32,11 +32,12 @@
 {
     TOCropViewController *cropController = [[TOCropViewController alloc] initWithCroppingStyle:self.croppingStyle image:image];
     cropController.delegate = self;
+    cropController.showAdjustThumbnailOption = NO;
 
     // Uncomment this if you wish to provide extra instructions via a title label
     cropController.title = @"Crop image";
 
-    [cropController setOnDidCropToRect:^(UIImage * _Nonnull image, CGRect cropRect, NSInteger angle) {
+    [cropController setOnDidCropToRect:^(UIImage * _Nonnull image, CGRect cropRect, NSInteger angle, BOOL shouldAdjustThumbnail) {
         
     }];
 

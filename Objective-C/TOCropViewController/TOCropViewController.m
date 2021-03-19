@@ -41,6 +41,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 @property (nonatomic, strong) TOCropToolbar *toolbar;
 @property (nonatomic, strong, readwrite) TOCropView *cropView;
 @property (nonatomic, strong) UIView *toolbarSnapshotView;
+@property (nonatomic, strong) UIButton *buttonAdjustThumbnail;
 
 /* Transition animation controller */
 @property (nonatomic, copy) void (^prepareForTransitionHandler)(void);
@@ -115,6 +116,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     // Layout the views initially
     self.cropView.frame = [self frameForCropViewWithVerticalLayout:self.verticalLayout];
     self.toolbar.frame = [self frameForToolbarWithVerticalLayout:self.verticalLayout];
+    self.buttonAdjustThumbnail.frame = [self frameForButtonAdjustThumbnail];
 
     // Set up the toolbar button actions
     __weak typeof(self) weakSelf = self;
@@ -257,8 +259,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         frame.origin.y = 0.0f;
         frame.size.width = kTOCropViewControllerToolbarHeight;
         frame.size.height = CGRectGetHeight(self.view.frame);
-    }
-    else {
+    } else {
         frame.origin.x = 0.0f;
         frame.size.width = CGRectGetWidth(self.view.bounds);
         frame.size.height = kTOCropViewControllerToolbarHeight;
@@ -268,8 +269,24 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         } else {
             frame.origin.y = insets.top;
         }
+
+        if (self.showAdjustThumbnailOption) {
+            frame.origin.y -= 60;
+        }
     }
     
+    return frame;
+}
+
+- (CGRect)frameForButtonAdjustThumbnail
+{
+    UIEdgeInsets insets = self.statusBarSafeInsets;
+
+    CGRect frame = CGRectZero;
+    frame.origin.x = 0.0f;
+    frame.size.height = kTOCropViewControllerToolbarHeight;
+    frame.origin.y = CGRectGetHeight(self.view.bounds) - (frame.size.height + insets.bottom) - 8;
+    frame.size.width = CGRectGetWidth(self.view.bounds);
     return frame;
 }
 
@@ -372,100 +389,11 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
     [UIView performWithoutAnimation:^{
         self.toolbar.frame = [self frameForToolbarWithVerticalLayout:self.verticalLayout];
+        self.buttonAdjustThumbnail.frame = [self frameForButtonAdjustThumbnail];
         [self adjustToolbarInsets];
         [self.toolbar setNeedsLayout];
     }];
 }
-
-#pragma mark - Rotation Handling -
-
-//TODO: Deprecate iOS 7 properly at the right time
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#pragma clang diagnostic ignored "-Wdeprecated-implementations"
-- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
-{
-    self.toolbarSnapshotView = [self.toolbar snapshotViewAfterScreenUpdates:NO];
-    self.toolbarSnapshotView.frame = self.toolbar.frame;
-    
-    if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation)) {
-        self.toolbarSnapshotView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-    }
-    else {
-        self.toolbarSnapshotView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleRightMargin;
-    }
-    [self.view addSubview:self.toolbarSnapshotView];
-
-    // Set up the toolbar frame to be just off t
-    CGRect frame = [self frameForToolbarWithVerticalLayout:UIInterfaceOrientationIsPortrait(toInterfaceOrientation)];
-    if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation)) {
-        frame.origin.x = -frame.size.width;
-    }
-    else {
-        frame.origin.y = self.view.bounds.size.height;
-    }
-    self.toolbar.frame = frame;
-
-    [self.toolbar layoutIfNeeded];
-    self.toolbar.alpha = 0.0f;
-    
-    [self.cropView prepareforRotation];
-    self.cropView.frame = [self frameForCropViewWithVerticalLayout:!UIInterfaceOrientationIsPortrait(toInterfaceOrientation)];
-    self.cropView.simpleRenderMode = YES;
-    self.cropView.internalLayoutDisabled = YES;
-}
-
-- (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
-{
-    //Remove all animations in the toolbar
-    self.toolbar.frame = [self frameForToolbarWithVerticalLayout:!UIInterfaceOrientationIsLandscape(toInterfaceOrientation)];
-    [self.toolbar.layer removeAllAnimations];
-    for (CALayer *sublayer in self.toolbar.layer.sublayers) {
-        [sublayer removeAllAnimations];
-    }
-
-    // On iOS 11, since these layout calls are done multiple times, if we don't aggregate from the
-    // current state, the animation breaks.
-    [UIView animateWithDuration:duration
-                          delay:0.0f
-                        options:UIViewAnimationOptionBeginFromCurrentState
-                     animations:
-    ^{
-        self.cropView.frame = [self frameForCropViewWithVerticalLayout:!UIInterfaceOrientationIsLandscape(toInterfaceOrientation)];
-        self.toolbar.frame = [self frameForToolbarWithVerticalLayout:UIInterfaceOrientationIsPortrait(toInterfaceOrientation)];
-        [self.cropView performRelayoutForRotation];
-    } completion:nil];
-
-    self.toolbarSnapshotView.alpha = 0.0f;
-    self.toolbar.alpha = 1.0f;
-}
-
-- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
-{
-    [self.toolbarSnapshotView removeFromSuperview];
-    self.toolbarSnapshotView = nil;
-    
-    [self.cropView setSimpleRenderMode:NO animated:YES];
-    self.cropView.internalLayoutDisabled = NO;
-}
-
-- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
-{
-    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    
-    UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
-    CGSize currentSize = self.view.bounds.size;
-    if (currentSize.width < size.width)
-        orientation = UIInterfaceOrientationLandscapeLeft;
-    
-    [self willRotateToInterfaceOrientation:orientation duration:coordinator.transitionDuration];
-    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
-        [self willAnimateRotationToInterfaceOrientation:orientation duration:coordinator.transitionDuration];
-    } completion:^(id<UIViewControllerTransitionCoordinatorContext> context) {
-        [self didRotateFromInterfaceOrientation:orientation];
-    }];
-}
-#pragma clang diagnostic pop
 
 - (void)setAspectRatioPreset:(TOCropViewControllerAspectRatioPreset)aspectRatioPreset animated:(BOOL)animated
 {
@@ -676,6 +604,11 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
 - (void)doneButtonTapped
 {
+    [self done:NO];
+}
+
+- (void)done:(BOOL)shouldAdjustThumbnailAfter
+{
     CGRect cropFrame = self.cropView.imageCropFrame;
     NSInteger angle = self.cropView.angle;
 
@@ -683,15 +616,15 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     if (self.showActivitySheetOnDone) {
         TOActivityCroppedImageProvider *imageItem = [[TOActivityCroppedImageProvider alloc] initWithImage:self.image cropFrame:cropFrame angle:angle circular:(self.croppingStyle == TOCropViewCroppingStyleCircular)];
         TOCroppedImageAttributes *attributes = [[TOCroppedImageAttributes alloc] initWithCroppedFrame:cropFrame angle:angle originalImageSize:self.image.size];
-        
+
         NSMutableArray *activityItems = [@[imageItem, attributes] mutableCopy];
         if (self.activityItems) {
             [activityItems addObjectsFromArray:self.activityItems];
         }
-        
+
         UIActivityViewController *activityController = [[UIActivityViewController alloc] initWithActivityItems:activityItems applicationActivities:self.applicationActivities];
         activityController.excludedActivityTypes = self.excludedActivityTypes;
-        
+
         if (NSClassFromString(@"UIPopoverPresentationController")) {
             activityController.modalPresentationStyle = UIModalPresentationPopover;
             activityController.popoverPresentationController.sourceView = self.toolbar;
@@ -717,9 +650,9 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
             if (!completed) {
                 return;
             }
-            
+
             bool isCallbackOrDelegateHandled = NO;
-            
+
             if (self.onDidFinishCancelled != nil) {
                 self.onDidFinishCancelled(NO);
                 isCallbackOrDelegateHandled = YES;
@@ -728,7 +661,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
                 [self.delegate cropViewController:self didFinishCancelled:NO];
                 isCallbackOrDelegateHandled = YES;
             }
-            
+
             if (!isCallbackOrDelegateHandled) {
                 [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
                 blockController.completionWithItemsHandler = nil;
@@ -739,9 +672,9 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
             if (!completed) {
                 return;
             }
-            
+
             BOOL isCallbackOrDelegateHandled = NO;
-            
+
             if (self.onDidFinishCancelled != nil) {
                 self.onDidFinishCancelled(NO);
                 isCallbackOrDelegateHandled = YES;
@@ -751,7 +684,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
                 [self.delegate cropViewController:self didFinishCancelled:NO];
                 isCallbackOrDelegateHandled = YES;
             }
-            
+
             if (!isCallbackOrDelegateHandled) {
                 [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
                 blockController.completionHandler = nil;
@@ -761,9 +694,9 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
         return;
     }
-    
+
     BOOL isCallbackOrDelegateHandled = NO;
-    
+
     //If the delegate/block that only supplies crop data is provided, call it
     if ([self.delegate respondsToSelector:@selector(cropViewController:didCropImageToRect:angle:)]) {
         [self.delegate cropViewController:self didCropImageToRect:cropFrame angle:angle];
@@ -786,7 +719,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     //If cropping circular and the circular generation delegate/block is implemented, call it
     if (self.croppingStyle == TOCropViewCroppingStyleCircular && (isCircularImageDelegateAvailable || isCircularImageCallbackAvailable)) {
         UIImage *image = [self.image croppedImageWithFrame:cropFrame angle:angle circularClip:YES scale:1];
-        
+
         //Dispatch on the next run-loop so the animation isn't interuppted by the crop operation
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.03f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             if (isCircularImageDelegateAvailable) {
@@ -796,7 +729,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
                 self.onDidCropToCircleImage(image, cropFrame, angle);
             }
         });
-        
+
         isCallbackOrDelegateHandled = YES;
     }
     //If the delegate/block that requires the specific cropped image is provided, call it
@@ -808,7 +741,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         else {
             image = [self.image croppedImageWithFrame:cropFrame angle:angle circularClip:NO scale:1];
         }
-        
+
         //Dispatch on the next run-loop so the animation isn't interuppted by the crop operation
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.03f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             if (isDidCropToImageDelegateAvailable) {
@@ -816,13 +749,13 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
             }
 
             if (isDidCropToImageCallbackAvailable) {
-                self.onDidCropToRect(image, cropFrame, angle);
+                self.onDidCropToRect(image, cropFrame, angle, shouldAdjustThumbnailAfter);
             }
         });
-        
+
         isCallbackOrDelegateHandled = YES;
     }
-    
+
     if (!isCallbackOrDelegateHandled) {
         [self.presentingViewController dismissViewControllerAnimated:YES completion:nil];
     }
@@ -858,6 +791,31 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     }
 
     return _toolbar;
+}
+
+- (UIButton *)buttonAdjustThumbnail
+{
+    if (!self.showAdjustThumbnailOption) {
+        return nil;
+    }
+
+    if (!_buttonAdjustThumbnail) {
+        _buttonAdjustThumbnail = [[UIButton alloc] initWithFrame:CGRectZero];
+        [_buttonAdjustThumbnail setTitle:@"Adjust Thumbnail" forState:UIControlStateNormal];
+        [_buttonAdjustThumbnail setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [_buttonAdjustThumbnail.titleLabel setFont:[UIFont boldSystemFontOfSize:15.]];
+        [_buttonAdjustThumbnail.titleLabel setTextAlignment:NSTextAlignmentCenter];
+
+        [_buttonAdjustThumbnail addTarget:self
+                                   action:@selector(buttonAdjustThumbnailDidPressed:)
+                         forControlEvents:UIControlEventTouchUpInside];
+
+        if (!self.aspectRatioLockEnabled) {
+            [self.view addSubview:_buttonAdjustThumbnail];
+        }
+    }
+
+    return _buttonAdjustThumbnail;
 }
 
 - (void)setAspectRatioLockEnabled:(BOOL)aspectRatioLockEnabled
@@ -971,6 +929,11 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (CGFloat)minimumAspectRatio
 {
     return self.cropView.minimumAspectRatio;
+}
+
+- (void)buttonAdjustThumbnailDidPressed:(id)sender
+{
+    [self done:YES];
 }
 
 @end
