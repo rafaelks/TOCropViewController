@@ -31,8 +31,9 @@
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingImage:(UIImage *)image editingInfo:(NSDictionary *)editingInfo
 {
     TOCropViewController *cropController = [[TOCropViewController alloc] initWithCroppingStyle:self.croppingStyle image:image];
-    cropController.delegate = self;
-    cropController.showAdjustThumbnailOption = NO;
+    cropController.aspectRatioLockEnabled = NO;
+    cropController.resetAspectRatioEnabled = NO;
+    cropController.showAdjustThumbnailOption = YES;
 
     // Uncomment this if you wish to provide extra instructions via a title label
     cropController.title = @"Crop image";
@@ -69,6 +70,7 @@
     else { //otherwise dismiss, and then present from the main controller
         [picker dismissViewControllerAnimated:YES completion:^{
             UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:cropController];
+            nav.modalPresentationStyle = UIModalPresentationFullScreen;
             [self presentViewController:nav animated:YES completion:nil];
             //[self.navigationController pushViewController:cropController animated:YES];
         }];

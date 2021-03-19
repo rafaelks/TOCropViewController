@@ -393,6 +393,9 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         [self adjustToolbarInsets];
         [self.toolbar setNeedsLayout];
     }];
+
+    [self.view bringSubviewToFront:self.toolbar];
+    [self.view bringSubviewToFront:self.buttonAdjustThumbnail];
 }
 
 - (void)setAspectRatioPreset:(TOCropViewControllerAspectRatioPreset)aspectRatioPreset animated:(BOOL)animated
