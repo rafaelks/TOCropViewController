@@ -128,13 +128,16 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+
+    UIColor *pinkColor = [UIColor colorWithRed:255. / 255. green:68. / 255. blue:119. / 255. alpha:1];
+
     [self setNeedsStatusBarAppearanceUpdate];
 
     // Transparent navigation bar
     [self.navigationController.navigationBar setBackgroundImage:[UIImage new] forBarMetrics:UIBarMetricsDefault];
     [self.navigationController.navigationBar setShadowImage:[UIImage new]];
     [self.navigationController.navigationBar setTranslucent:YES];
-    [self.navigationController.navigationBar setTintColor:[UIColor whiteColor]];
+    [self.navigationController.navigationBar setTintColor:pinkColor];
     [self.navigationController.navigationBar setTitleTextAttributes:@{
         NSForegroundColorAttributeName: [UIColor whiteColor]
     }];
@@ -149,13 +152,14 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 
     // Navigation Buttons
     if (self.navigationController.viewControllers.count == 1) {
-        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Cancel", "")
-                                                                                 style:UIBarButtonItemStylePlain
-                                                                                target:self
-                                                                                action:@selector(cancelButtonTapped)];
-    }
+        UIBarButtonItem *cancelButton = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Cancel", "")
+                                                                         style:UIBarButtonItemStylePlain
+                                                                        target:self
+                                                                        action:@selector(cancelButtonTapped)];
 
-    UIColor *pinkColor = [UIColor colorWithRed:255. / 255. green:68. / 255. blue:119. / 255. alpha:1];
+        [cancelButton setTintColor:pinkColor];
+        self.navigationItem.leftBarButtonItem = cancelButton;
+    }
 
     UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Done", "") style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonTapped)];
     [buttonNext setTintColor:pinkColor];
