@@ -161,7 +161,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         self.navigationItem.leftBarButtonItem = cancelButton;
     }
 
-    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Done", "") style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonTapped)];
+    UIBarButtonItem *buttonNext = [[UIBarButtonItem alloc] initWithTitle:NSLocalizedString(@"Save", "") style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonTapped)];
     [buttonNext setTintColor:pinkColor];
     self.navigationItem.rightBarButtonItem = buttonNext;
 
