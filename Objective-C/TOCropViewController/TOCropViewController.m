@@ -275,7 +275,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         }
 
         if (self.showAdjustThumbnailOption) {
-            frame.origin.y -= 60;
+            frame.origin.y -= kTOCropViewControllerToolbarHeight;
         }
     }
     
