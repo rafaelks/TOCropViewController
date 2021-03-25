@@ -289,7 +289,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     CGRect frame = CGRectZero;
     frame.origin.x = 0.0f;
     frame.size.height = kTOCropViewControllerToolbarHeight;
-    frame.origin.y = CGRectGetHeight(self.view.bounds) - (frame.size.height + insets.bottom) - 8;
+    frame.origin.y = CGRectGetHeight(self.view.bounds) - (frame.size.height + insets.bottom);
     frame.size.width = CGRectGetWidth(self.view.bounds);
     return frame;
 }
@@ -328,6 +328,10 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         } else {
 			frame.origin.y = kTOCropViewControllerToolbarHeight + insets.top;
             frame.size.height -= frame.origin.y;
+        }
+
+        if (self.showAdjustThumbnailOption) {
+            frame.size.height -= (insets.bottom + kTOCropViewControllerToolbarHeight);
         }
     }
     
